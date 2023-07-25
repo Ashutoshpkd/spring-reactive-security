@@ -1,0 +1,46 @@
+server:
+  port: 7777
+spring:
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: otpdb
+      auto-index-creation: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: yogiashu14@gmail.com
+    password: ydexdlkkcydotzmr
+    smtp:
+      auth: true
+      starttls:
+        enable: true
+    # Other properties
+    properties:
+      mail:
+        smtp:
+          auth: true
+          connectiontimeout: 50000
+          timeout: 3000
+          writetimeout: 50000
+          starttls:
+            enable: true
+    default-encoding: UTF-8
+    protocol: smtp
+
+# Disabling the swagger-ui
+# https://springdoc.org/
+springdoc:
+  api-docs:
+    groups:
+      enabled: false
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+
+
+app:
+  mail:
+    from: ashutoshpkd@gmail.com
+    base-url: http://localhost:7777
