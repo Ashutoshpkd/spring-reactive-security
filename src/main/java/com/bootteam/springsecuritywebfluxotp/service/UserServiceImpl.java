@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
                         if (DateUtils.getLocalDateTimeNow().isAfter(u.getOtpRequest().getTime())){
                             return  Mono.error(new OtpCheckingException("Otp code expired"));
                         }
-                    }else {
+                    } else {
                         return Mono.error(new OtpCheckingException("OTP code not valid"));
                     }
                     return setOtpRequest(u, true);
@@ -68,7 +68,7 @@ public class UserServiceImpl implements UserService {
                                 .flatMap(authentication ->
                                         Mono.just(tokenProvider
                                                 .generateToken(authentication, true))))
-                .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1()))).doOnSuccess(t -> sendOtp(t.user()));
+                .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())));
     }
 
     @Override
@@ -84,7 +84,6 @@ public class UserServiceImpl implements UserService {
 
                         .switchIfEmpty(Mono.defer(() -> {
 
-                                   // check and add roles
                                     userPasswordDTO.getRoles().forEach(r -> roleRepository.findByName(r.getName())
                                             .switchIfEmpty(Mono.defer(() -> roleRepository.save(r))));
 
@@ -106,7 +105,8 @@ public class UserServiceImpl implements UserService {
 
         return userMono.flatMap(user -> setOtpRequest(user, false))
                 .zipWhen(token -> Mono.just(tokenProvider.generateToken(authentication, true)))
-               .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())));
+               .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())))
+                ;
     }
 
     private void sendOtp(User user){

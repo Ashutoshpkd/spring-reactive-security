@@ -17,6 +17,6 @@ public class AppConstant {
     public final long TOKEN_VALIDITY_TIME = 1_000L*86400;
 
     // temp token validity = 10min
-    public final long TOKEN_TEMP_VALIDITY_TIME = 1000L*600;
+    public final long TOKEN_TEMP_VALIDITY_TIME = 1000L*600*1000;
 
 }

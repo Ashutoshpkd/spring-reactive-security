@@ -25,7 +25,7 @@ public class CustomAuthenticationEntryPoint implements ServerAuthenticationEntry
     @SneakyThrows
     @Override
     public Mono<Void> commence(ServerWebExchange exchange, AuthenticationException e) {
-        LOGGER.error("ServerAuthenticationEntryPoint  error message: {} cause {}",e.getMessage(), e.getCause());
+        LOGGER.info("ServerAuthenticationEntryPoint  error message: {} cause {}",e.getMessage(), e.getCause());
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);

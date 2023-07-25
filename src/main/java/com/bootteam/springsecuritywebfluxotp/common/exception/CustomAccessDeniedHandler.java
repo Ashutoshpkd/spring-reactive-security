@@ -31,7 +31,7 @@ public class CustomAccessDeniedHandler implements ServerAccessDeniedHandler {
     @SneakyThrows
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, AccessDeniedException denied) {
-        LOGGER.error("ServerAccessDeniedHandler error message: {} cause: {}",denied.getMessage(),denied.getCause());
+        LOGGER.info("ServerAccessDeniedHandler error message: {} cause: {}",denied.getMessage(),denied.getCause());
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.FORBIDDEN);
         response.getHeaders().set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);

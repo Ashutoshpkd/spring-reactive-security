@@ -15,7 +15,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @ToString
 @EqualsAndHashCode
-@Document(collection="role")
+@Document(collection="roles")
 public class Role implements Serializable {
 
     @Serial

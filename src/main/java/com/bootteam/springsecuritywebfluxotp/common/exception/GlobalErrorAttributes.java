@@ -8,6 +8,7 @@ import org.springframework.boot.web.reactive.error.DefaultErrorAttributes;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -33,7 +34,8 @@ public class GlobalErrorAttributes extends DefaultErrorAttributes {
             new ExceptionRule(BadCredentialsException.class, HttpStatus.UNAUTHORIZED),
             new ExceptionRule(ValidatorException.class, HttpStatus.BAD_REQUEST),
             new ExceptionRule(EmailAlreadyUsedException.class, HttpStatus.NOT_FOUND),
-            new ExceptionRule(UsernameAlreadyUsedException.class, HttpStatus.NOT_FOUND)
+            new ExceptionRule(UsernameAlreadyUsedException.class, HttpStatus.NOT_FOUND),
+            new ExceptionRule(InsufficientAuthenticationException.class, HttpStatus.UNAUTHORIZED)
     );
 
     @Override

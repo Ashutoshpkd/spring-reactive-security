@@ -34,7 +34,6 @@ public class RoleServiceImpl implements RoleService {
         return roleRepository.findByName(roleName)
                 .flatMap(existingRole -> Mono.error(new RoleAlreadyUsedException()))
                 .cast(Role.class)
-
                 .switchIfEmpty(Mono.defer(() -> roleRepository.save(Role.builder().name(roleName).build())));
     }
 
@@ -49,7 +48,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Flux<Role> getAllRoles() {
         return roleRepository.findAll()
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NO_CONTENT, "There aren't any role in DB.")));
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NO_CONTENT, "There aren't any roles in DB.")));
     }
 
 }

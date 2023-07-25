@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
@@ -24,11 +25,14 @@ import java.util.Optional;
  * Filters incoming requests and installs a Spring Security principal if a header corresponding to a valid user is
  * found.
  */
-@RequiredArgsConstructor
 @Slf4j
 public class SecurityContextFilter implements WebFilter {
 
-    private final TokenProvider tokenProvider;
+    private TokenProvider tokenProvider;
+
+    public SecurityContextFilter(TokenProvider tokenProvider) {
+        this.tokenProvider = tokenProvider;
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -37,14 +41,11 @@ public class SecurityContextFilter implements WebFilter {
             Authentication authentication = tokenProvider.getAuthentication(jwt.get());
 //            authentication.setAuthenticated(true);
             LOGGER.info("Authentication object before setting in SecurityContextHolder: {}", authentication);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            ReactiveSecurityContextHolder.getContext().contextWrite(ctx -> {
-                SecurityContext sc = ctx.get(SecurityContext.class);
-                sc.setAuthentication(authentication);
-                return ctx;
-            });
-            chain.filter(exchange)
-                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+            SecurityContext securityContext = new SecurityContextImpl(authentication);
+            LOGGER.info("Authentication object before setting in SecurityContextHolder: {}", securityContext);
+            return chain.filter(exchange)
+                    .subscriberContext(ReactiveSecurityContextHolder
+                            .withSecurityContext(Mono.just(securityContext)));
         }
         return chain.filter(exchange);
     }

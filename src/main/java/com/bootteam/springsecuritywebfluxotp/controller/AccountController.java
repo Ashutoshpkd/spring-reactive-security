@@ -1,38 +1,44 @@
 package com.bootteam.springsecuritywebfluxotp.controller;
 
+import com.bootteam.springsecuritywebfluxotp.common.exception.CustomAccessDeniedHandler;
 import com.bootteam.springsecuritywebfluxotp.common.exception.ValidatorException;
+import com.bootteam.springsecuritywebfluxotp.domain.document.User;
+import com.bootteam.springsecuritywebfluxotp.security.TokenProvider;
 import com.bootteam.springsecuritywebfluxotp.service.UserService;
+import com.bootteam.springsecuritywebfluxotp.service.ValidateAuthorityService;
 import com.bootteam.springsecuritywebfluxotp.service.mapper.dto.ApiResponseDTO;
 import com.bootteam.springsecuritywebfluxotp.service.mapper.dto.LoginDTO;
 import com.bootteam.springsecuritywebfluxotp.service.mapper.dto.UserPasswordDTO;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import javax.validation.ConstraintViolation;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import java.security.Principal;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class AccountController {
-    private final Logger LOG = LoggerFactory.getLogger(AccountController.class);
+
     private final UserService userService;
     private final Validator validator;
     private final ReactiveAuthenticationManager authenticationManager;
-
-    @PreAuthorize("hasRole('ROLE_USER') AND hasRole('ROLE_ADMIN')")
-    @PostMapping("/authenticate")
-    public Mono<ApiResponseDTO> isAuthenticated(Principal principal) {
-        return Mono.just(new ApiResponseDTO(principal.getName(), "Current user is authenticated"));
-    }
+    private final ValidateAuthorityService validateAuth;
 
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ApiResponseDTO> register(@RequestBody @Valid UserPasswordDTO userPasswordDTO) {
@@ -55,19 +61,30 @@ public class AccountController {
                 .map(jwt -> new ApiResponseDTO(jwt.token(), "Partially successful user login - an OTP code has been sent to your email address"));
     }
 
-    @PreAuthorize("hasRole('PRE_AUTH')")
     @GetMapping("/otp/{code}")
     public Mono<ApiResponseDTO> optCheckCode(@PathVariable String code, Principal principal) {
-        LOG.info("Request is in the optCheckCode controller - code: {}, principal: ", code, principal);
+        Set<String> rolesMain = new HashSet<>();
+        rolesMain.add("PRE_AUTH");
+        validateAuth.validateAuthorityForPrincipal(principal, rolesMain);
         return userService.checkCode(principal.getName(), code)
                 .map(token -> new ApiResponseDTO(token, "Otp checking success"));
     }
 
-    @PreAuthorize("hasRole('PRE_AUTH')")
-    @PostMapping("/resend/code")
+    @GetMapping("/resend/code")
     public Mono<ApiResponseDTO> optResendCode(Principal principal) {
-        LOG.info("Request is in the controller - {}", principal);
+        Set<String> rolesMain = new HashSet<>();
+        rolesMain.add("PRE_AUTH");
+        validateAuth.validateAuthorityForPrincipal(principal, rolesMain);
         return userService.resendCode(principal.getName())
-                .map(token -> new ApiResponseDTO(token, "Otp checking success"));
+                .map(token -> new ApiResponseDTO(token, "Otp has been successfully sent"));
+    }
+
+    @GetMapping("/authenticate")
+    public Mono<ApiResponseDTO> isAuthenticated(Principal principal) {
+        Set<String> rolesMain = new HashSet<>();
+        rolesMain.add("ROLE_ADMIN");
+        rolesMain.add("ROLE_USER");
+        validateAuth.validateAuthorityForPrincipal(principal, rolesMain);
+        return Mono.just(new ApiResponseDTO(principal.getName(), "Current user is authenticated"));
     }
 }
