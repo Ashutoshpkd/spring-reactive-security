@@ -10,8 +10,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: 
-    password: 
+    username: yogiashu14@gmail.com
+    password: oarvekuqgbuaiauz
     smtp:
       auth: true
       starttls:
@@ -42,5 +42,5 @@ springdoc:
 
 app:
   mail:
-    from: 
+    from: ashutoshpkd@gmail.com
     base-url: http://localhost:7777
