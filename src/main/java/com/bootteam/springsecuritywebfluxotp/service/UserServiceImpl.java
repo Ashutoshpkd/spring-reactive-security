@@ -51,7 +51,8 @@ public class UserServiceImpl implements UserService {
                         return Mono.error(new OtpCheckingException("OTP code not valid"));
                     }
                     return setOtpRequest(u, true);
-                }).flatMap(u -> tokenProvider.getCurrentUserAuthentication())
+                }).flatMap(u ->
+                        userRepository.findOneByUsernameIgnoreCase(authenticationName))
                 .flatMap(t -> Mono.just(tokenProvider.generateToken(t, false)));
     }
 
@@ -67,8 +68,9 @@ public class UserServiceImpl implements UserService {
                                 .getCurrentUserAuthentication()
                                 .flatMap(authentication ->
                                         Mono.just(tokenProvider
-                                                .generateToken(authentication, true))))
-                .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())));
+                                                .generateToken(u, true))))
+                .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())))
+                .doOnSuccess(token -> otpMailService.sendLoginOTPEmail(token.user()));
     }
 
     @Override
@@ -104,14 +106,9 @@ public class UserServiceImpl implements UserService {
         Mono<User> userMono = getUserMono(authentication.getName());
 
         return userMono.flatMap(user -> setOtpRequest(user, false))
-                .zipWhen(token -> Mono.just(tokenProvider.generateToken(authentication, true)))
+                .zipWhen(token -> Mono.just(tokenProvider.generateToken(token, true)))
                .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())))
-                ;
-    }
-
-    private void sendOtp(User user){
-        LOGGER.info("send code {} to user {}, User: {}", user.getOtpRequest().getCode(), user.getEmail(), user);
-        otpMailService.sendLoginOTPEmail(user);
+                .doOnSuccess(token -> otpMailService.sendLoginOTPEmail(token.user()));
     }
 
     private Mono<User> setOtpRequest(User user, boolean erase) {

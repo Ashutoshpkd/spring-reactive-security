@@ -14,9 +14,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
@@ -36,17 +36,17 @@ public class TokenProvider {
         jwtParser = Jwts.parserBuilder().setSigningKey(key).build();
     }
 
-    public String generateToken(Authentication authentication, boolean isTempToken) {
+    public String generateToken(UserDetails authentication, boolean isTempToken) {
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
 
-        LOGGER.info("Authorities for the user: {}, authorities: {}", authentication.getName(), authorities);
+        LOGGER.info("Authorities for the user: {}, authorities: {}", authentication.getUsername(), authorities);
 
         long now = (DateUtils.convertFromLocalDateToDate()).getTime();
         Date validity = new Date(now + (isTempToken ? AppConstant.TOKEN_TEMP_VALIDITY_TIME : AppConstant.TOKEN_VALIDITY_TIME));
         return Jwts
                 .builder()
-                .setSubject(authentication.getName())
+                .setSubject(authentication.getUsername())
                 .claim(AppConstant.AUTHORITIES_KEY, isTempToken ? "PRE_AUTH" : authorities)
                 .setId(UUID.randomUUID().toString())
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -70,10 +70,7 @@ public class TokenProvider {
         User principal = new User(claims.getSubject(), "", authorities);
         LOGGER.info("Principal user in GetAuth: {}", principal);
 
-        Authentication authentication
-                = new UsernamePasswordAuthenticationToken(principal, token, authorities);
-//        authentication.setAuthenticated(true);
-        return authentication;
+        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 
     public boolean validateToken(String authToken) {

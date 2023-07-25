@@ -1,16 +1,18 @@
 package com.bootteam.springsecuritywebfluxotp.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
+@Slf4j
 public class ValidateAuthorityService {
 
     public void validateAuthorityForPrincipal(Principal principal, Set<String> requiredRoles) {
@@ -34,6 +36,12 @@ public class ValidateAuthorityService {
     }
 
     private boolean hasAllRequiredRoles(Collection<? extends GrantedAuthority> authorities, Set<String> requiredRoles) {
-        return authorities.stream().map(GrantedAuthority::getAuthority).allMatch(requiredRoles::contains);
+        AtomicBoolean allMatch = new AtomicBoolean(true);
+        authorities.forEach(authority -> {
+            if (!requiredRoles.contains(authority.getAuthority().trim())) {
+                allMatch.set(false);
+            }
+        });
+        return allMatch.get();
     }
 }
