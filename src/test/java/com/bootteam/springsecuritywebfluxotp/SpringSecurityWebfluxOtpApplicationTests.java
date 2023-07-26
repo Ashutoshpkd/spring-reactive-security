@@ -1,4 +1,4 @@
-package com.bootteam.springsecuritywebfluxotp;
+package com.aip.security.webfluxotp;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
