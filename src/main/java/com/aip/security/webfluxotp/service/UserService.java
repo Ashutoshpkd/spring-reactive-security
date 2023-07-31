@@ -1,6 +1,7 @@
 package com.aip.security.webfluxotp.service;
 
 import com.aip.security.webfluxotp.domain.document.User;
+import com.aip.security.webfluxotp.service.mapper.dto.ApiResponseDTO;
 import com.aip.security.webfluxotp.service.mapper.dto.OtpTokenDTO;
 import com.aip.security.webfluxotp.service.mapper.dto.UserPasswordDTO;
 import org.springframework.security.core.Authentication;
@@ -30,4 +31,10 @@ public interface UserService {
      * @return Mono OtpTokenDTO
      */
     Mono<OtpTokenDTO> setUserOtp(Authentication authentication);
+
+    /**
+     * @param username  security authentication
+     * @return Mono User
+     */
+    Mono<ApiResponseDTO> getAuthenticatedUser(String username);
 }

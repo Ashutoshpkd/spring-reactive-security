@@ -1,9 +1,15 @@
 package com.aip.security.webfluxotp.service.mapper.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-@lombok.Builder
-@lombok.NoArgsConstructor
-@lombok.AllArgsConstructor
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class ApiResponseDTO {
 
     @JsonProperty("data")

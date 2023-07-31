@@ -1,5 +1,6 @@
 package com.aip.security.webfluxotp.service;
 
+import com.aip.security.webfluxotp.service.mapper.dto.ApiResponseDTO;
 import com.aip.security.webfluxotp.service.mapper.dto.UserPasswordDTO;
 import com.aip.security.webfluxotp.common.DateUtils;
 import com.aip.security.webfluxotp.common.exception.EmailAlreadyUsedException;
@@ -109,6 +110,17 @@ public class UserServiceImpl implements UserService {
                 .zipWhen(token -> Mono.just(tokenProvider.generateToken(token, true)))
                .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())))
                 .doOnSuccess(token -> otpMailService.sendLoginOTPEmail(token.user()));
+    }
+
+    @Override
+    public Mono<ApiResponseDTO> getAuthenticatedUser(String username) {
+        var authUser = getUserMono(username);
+        return authUser.flatMap(user -> Mono.just(
+                ApiResponseDTO.builder()
+                        .data(user)
+                        .message("User with username: " + username + " is authenticated")
+                        .build()
+        ));
     }
 
     private Mono<User> setOtpRequest(User user, boolean erase) {

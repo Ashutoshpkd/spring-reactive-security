@@ -74,6 +74,6 @@ public class AccountController {
         rolesMain.add("ROLE_ADMIN");
         rolesMain.add("ROLE_USER");
         validateAuth.validateAuthorityForPrincipal(principal, rolesMain);
-        return Mono.just(new ApiResponseDTO(principal.getName(), "Current user is authenticated"));
+        return userService.getAuthenticatedUser(principal.getName());
     }
 }

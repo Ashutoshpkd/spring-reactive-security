@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  # Spring Reactive application service
+  spring_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+
+  # MongoDB service
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
