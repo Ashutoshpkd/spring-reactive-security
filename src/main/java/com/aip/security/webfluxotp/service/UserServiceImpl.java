@@ -1,5 +1,7 @@
 package com.aip.security.webfluxotp.service;
 
+import com.aip.security.webfluxotp.common.exception.OtpNotSentException;
+import com.aip.security.webfluxotp.factory.SendOTPFactory;
 import com.aip.security.webfluxotp.service.mapper.dto.ApiResponseDTO;
 import com.aip.security.webfluxotp.service.mapper.dto.UserPasswordDTO;
 import com.aip.security.webfluxotp.common.DateUtils;
@@ -19,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.internal.constraintvalidators.hv.EmailValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,44 +30,44 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.constraints.NotNull;
 
-@Slf4j
 @RequiredArgsConstructor
 @Service
 public class UserServiceImpl implements UserService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final TokenProvider tokenProvider;
     private final UserMapper mapper;
-    private final OTPMailService otpMailService;
+    private final SendOTPFactory sendOTPFactory;
 
     @Override
-    public Mono<String> checkCode(String authenticationName, @NotNull String code) {
+    public Mono<String> checkCode(String authenticationName, OtpChannel channel, @NotNull String code) {
 
         Mono<User> userMono = getUserMono(authenticationName);
 
         return userMono.flatMap(u -> {
-                    if(code.equals(u.getOtpRequest().getCode())){
+                    if(code.equals(u.getOtpRequest().getCode())) {
                         if (DateUtils.getLocalDateTimeNow().isAfter(u.getOtpRequest().getTime())){
                             return  Mono.error(new OtpCheckingException("Otp code expired"));
                         }
                     } else {
                         return Mono.error(new OtpCheckingException("OTP code not valid"));
                     }
-                    return setOtpRequest(u, true);
+                    return setOtpRequest(u, channel, true);
                 }).flatMap(u ->
                         userRepository.findOneByUsernameIgnoreCase(authenticationName))
                 .flatMap(t -> Mono.just(tokenProvider.generateToken(t, false)));
     }
 
     @Override
-    public Mono<OtpTokenDTO> resendCode(String authenticationName) {
+    public Mono<OtpTokenDTO> resendCode(String authenticationName, OtpChannel channel) {
 
         Mono<User> userMono = getUserMono(authenticationName);
 
         return userMono.flatMap(user ->
-                        setOtpRequest(user, false))
+                        setOtpRequest(user, channel, false))
                 .zipWhen(u ->
                         tokenProvider
                                 .getCurrentUserAuthentication()
@@ -71,7 +75,10 @@ public class UserServiceImpl implements UserService {
                                         Mono.just(tokenProvider
                                                 .generateToken(u, true))))
                 .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())))
-                .doOnSuccess(token -> otpMailService.sendLoginOTPEmail(token.user()));
+                .doOnSuccess(token -> {
+                    SendOTP otpService = sendOTPFactory.getInstance(channel);
+                    otpService.sendOTP(token.user());
+                });
     }
 
     @Override
@@ -102,14 +109,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Mono<OtpTokenDTO> setUserOtp(Authentication authentication) {
+    public Mono<OtpTokenDTO> login(Authentication authentication) {
         LOGGER.info("Authentication: {}", authentication.toString());
-        Mono<User> userMono = getUserMono(authentication.getName());
+        var userMono = getUserMono(authentication.getName());
 
-        return userMono.flatMap(user -> setOtpRequest(user, false))
-                .zipWhen(token -> Mono.just(tokenProvider.generateToken(token, true)))
-               .flatMap(t -> Mono.just(new OtpTokenDTO(t.getT2(), t.getT1())))
-                .doOnSuccess(token -> otpMailService.sendLoginOTPEmail(token.user()));
+        return userMono
+                .zipWhen(user -> Mono.just(tokenProvider.generateToken(user, true)))
+                .flatMap(token -> Mono.just(new OtpTokenDTO(token.getT2().toString(), token.getT1())));
+
     }
 
     @Override
@@ -123,8 +130,22 @@ public class UserServiceImpl implements UserService {
         ));
     }
 
-    private Mono<User> setOtpRequest(User user, boolean erase) {
-        OtpRequest otpRequest = (erase) ? new OtpRequest() : new OtpRequest(RandomStringUtils.randomAlphanumeric(4), DateUtils.getLocalDateTimeNow().plusMinutes(10), OtpChannel.EMAIL);
+    @Override
+    public Mono<OtpTokenDTO> fetchOTP(String username, OtpChannel channel) {
+        Mono<User> userMono = getUserMono(username);
+
+        return userMono.flatMap(user -> setOtpRequest(user, channel, false))
+                .zipWhen(u -> Mono.just(tokenProvider.generateToken(u, true)))
+                .flatMap(token -> Mono.just(new OtpTokenDTO(token.getT2(), token.getT1())))
+                .doOnSuccess(token -> {
+                    SendOTP otpService = sendOTPFactory.getInstance(channel);
+                    otpService.sendOTP(token.user());
+                })
+                .onErrorResume(throwable -> Mono.error(new OtpNotSentException("We are not able to send the otp right now. Please try again later.")));
+    }
+
+    private Mono<User> setOtpRequest(User user, OtpChannel channel, boolean erase) {
+        OtpRequest otpRequest = (erase) ? new OtpRequest() : new OtpRequest(RandomStringUtils.randomAlphanumeric(4), DateUtils.getLocalDateTimeNow().plusMinutes(10), channel);
         user.setOtpRequest(otpRequest);
         return userRepository.save(user);
     }

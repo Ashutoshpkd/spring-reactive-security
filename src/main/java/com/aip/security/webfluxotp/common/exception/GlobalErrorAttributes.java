@@ -35,7 +35,8 @@ public class GlobalErrorAttributes extends DefaultErrorAttributes {
             new ExceptionRule(ValidatorException.class, HttpStatus.BAD_REQUEST),
             new ExceptionRule(EmailAlreadyUsedException.class, HttpStatus.NOT_FOUND),
             new ExceptionRule(UsernameAlreadyUsedException.class, HttpStatus.NOT_FOUND),
-            new ExceptionRule(InsufficientAuthenticationException.class, HttpStatus.UNAUTHORIZED)
+            new ExceptionRule(InsufficientAuthenticationException.class, HttpStatus.UNAUTHORIZED),
+            new ExceptionRule(OtpNotSentException.class, HttpStatus.INTERNAL_SERVER_ERROR)
     );
 
     @Override

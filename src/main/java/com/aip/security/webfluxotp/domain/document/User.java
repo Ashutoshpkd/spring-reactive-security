@@ -12,6 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.Serial;
@@ -58,6 +59,10 @@ public class User implements UserDetails {
     @Size(min = 5, max = 254)
     @Indexed
     private String email;
+
+    @Size(min = 13, max = 15)
+    @NotBlank(message = "Phone number is required")
+    private String phone;
 
     @Field("otp_request")
     private OtpRequest otpRequest;

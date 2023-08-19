@@ -3,7 +3,8 @@ package com.aip.security.webfluxotp.service;
 import com.aip.security.webfluxotp.configuration.EmailProperties;
 import com.aip.security.webfluxotp.domain.document.User;
 import com.aip.security.webfluxotp.service.mapper.dto.EmailSenderDTO;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -21,9 +22,9 @@ import java.util.Locale;
 /**
  * Service for sending emails.
  */
-@Slf4j
 @Service
-public class OTPMailService {
+public class OTPMailService implements SendOTP {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OTPMailService.class);
     private static final String USER = "user";
     private static final String BASE_URL = "baseUrl";
     private static final String DEFAULT_LANGUAGE = "en";
@@ -82,7 +83,8 @@ public class OTPMailService {
     }
 
     @Async
-    public void sendLoginOTPEmail(User user) {
+    @Override
+    public void sendOTP(User user) {
         LOGGER.info("Sending login OTP email to '{}'", user);
         sendEmailFromTemplate(user, "mail/OTPCodeEmail", "email.otp.verification");
     }

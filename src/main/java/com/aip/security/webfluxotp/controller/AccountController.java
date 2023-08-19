@@ -1,12 +1,16 @@
 package com.aip.security.webfluxotp.controller;
 
 import com.aip.security.webfluxotp.common.exception.ValidatorException;
+import com.aip.security.webfluxotp.domain.model.OtpChannel;
 import com.aip.security.webfluxotp.service.UserService;
 import com.aip.security.webfluxotp.service.ValidateAuthorityService;
 import com.aip.security.webfluxotp.service.mapper.dto.ApiResponseDTO;
 import com.aip.security.webfluxotp.service.mapper.dto.LoginDTO;
 import com.aip.security.webfluxotp.service.mapper.dto.UserPasswordDTO;
+import com.aip.security.webfluxotp.service.mapper.dto.VerifyDTO;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,6 +27,8 @@ import java.util.Set;
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class AccountController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AccountController.class);
 
     private final UserService userService;
     private final Validator validator;
@@ -45,26 +51,34 @@ public class AccountController {
                 .switchIfEmpty(Mono.error(new ValidatorException(validator.validate(loginDTO).stream().map(ConstraintViolation::getMessage).toList().toString())))
                 .flatMap(login ->
                         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()))
-                                .flatMap(userService::setUserOtp)
+                                .flatMap(userService::login)
                 )
-                .map(jwt -> new ApiResponseDTO(jwt.token(), "Partially successful user login - an OTP code has been sent to your email address"));
+                .map(jwt -> new ApiResponseDTO(jwt.token(), "Partially successful user login - please verify yourself"));
     }
 
-    @GetMapping("/otp/{code}")
-    public Mono<ApiResponseDTO> optCheckCode(@PathVariable String code, Principal principal) {
+    @GetMapping(value = "/fetch/{channel}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ApiResponseDTO> verify(@PathVariable @Valid OtpChannel channel, Principal principal) {
+        String username = validateAuth.getUsernameFromPrincipal(principal);
+        return userService.fetchOTP(username, channel)
+                .map(jwt -> new ApiResponseDTO(jwt.token(), "OTP has been successfully sent!"));
+    }
+
+    @PostMapping("/verify")
+    public Mono<ApiResponseDTO> optCheckCode(@RequestBody @Valid VerifyDTO verifyDTO, Principal principal) {
         Set<String> rolesMain = new HashSet<>();
         rolesMain.add("PRE_AUTH");
+        logger.info("Validating the OTP for channel: {}, and code: {}", verifyDTO.getOtpChannel(), verifyDTO.getCode());
         validateAuth.validateAuthorityForPrincipal(principal, rolesMain);
-        return userService.checkCode(principal.getName(), code)
+        return userService.checkCode(principal.getName(), verifyDTO.getOtpChannel(), verifyDTO.getCode())
                 .map(token -> new ApiResponseDTO(token, "Otp checking success"));
     }
 
-    @GetMapping("/resend/code")
-    public Mono<ApiResponseDTO> optResendCode(Principal principal) {
+    @GetMapping("/resend/code/{channel}")
+    public Mono<ApiResponseDTO> optResendCode(@PathVariable OtpChannel channel, Principal principal) {
         Set<String> rolesMain = new HashSet<>();
         rolesMain.add("PRE_AUTH");
         validateAuth.validateAuthorityForPrincipal(principal, rolesMain);
-        return userService.resendCode(principal.getName())
+        return userService.resendCode(principal.getName(), channel)
                 .map(token -> new ApiResponseDTO(token, "Otp has been successfully sent"));
     }
 

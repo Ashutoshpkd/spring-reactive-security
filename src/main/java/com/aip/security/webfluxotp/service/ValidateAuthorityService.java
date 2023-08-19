@@ -35,6 +35,22 @@ public class ValidateAuthorityService {
         }
     }
 
+    public String getUsernameFromPrincipal(Principal principal) {
+        if (principal instanceof UsernamePasswordAuthenticationToken) {
+            UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) principal;
+            Object principalObject = authenticationToken.getPrincipal();
+
+            if (principalObject instanceof UserDetails) {
+                UserDetails userDetails = (UserDetails) principalObject;
+                return userDetails.getUsername();
+            } else {
+                throw new AccessDeniedException("Invalid user principal");
+            }
+        } else {
+            throw new AccessDeniedException("Invalid authentication token");
+        }
+    }
+
     private boolean hasAllRequiredRoles(Collection<? extends GrantedAuthority> authorities, Set<String> requiredRoles) {
         AtomicBoolean allMatch = new AtomicBoolean(true);
         authorities.forEach(authority -> {

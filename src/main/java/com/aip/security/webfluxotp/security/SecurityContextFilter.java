@@ -2,6 +2,8 @@ package com.aip.security.webfluxotp.security;
 
 import com.aip.security.webfluxotp.common.AppConstant;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
@@ -21,8 +23,8 @@ import java.util.Optional;
  * Filters incoming requests and installs a Spring Security principal if a header corresponding to a valid user is
  * found.
  */
-@Slf4j
 public class SecurityContextFilter implements WebFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityContextFilter.class);
 
     private TokenProvider tokenProvider;
 

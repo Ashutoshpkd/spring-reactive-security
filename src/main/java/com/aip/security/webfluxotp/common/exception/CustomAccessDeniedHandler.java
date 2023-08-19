@@ -3,6 +3,8 @@ package com.aip.security.webfluxotp.common.exception;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,9 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @Component
 public class CustomAccessDeniedHandler implements ServerAccessDeniedHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomAccessDeniedHandler.class);
     /**
      * The authentication is successful but the authorization is rejected.
      * @param exchange exchange
